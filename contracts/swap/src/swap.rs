@@ -3,9 +3,10 @@
 multiversx_sc::imports!();
 
 pub mod state;
+pub mod events;
 
 #[multiversx_sc::contract]
-pub trait Swap {
+pub trait Swap: events::EventsModule {
     #[init]
     fn init(
         &self,
@@ -15,6 +16,7 @@ pub trait Swap {
         refund_commitment: ManagedBuffer,
         claimer: ManagedAddress,
         owner: ManagedAddress,
+        amount: BigUint
     ) {
         self.timeout_duration_1().set(timeout_duration_1);
         self.timeout_duration_2().set(timeout_duration_2);
@@ -23,6 +25,7 @@ pub trait Swap {
         self.claimer().set(claimer);
         self.owner().set(owner);
         self.state().set(state::SwapState::Created);
+        self.amount().set(amount);
     }
 
     /// The owner should `setReady` when
@@ -37,12 +40,29 @@ pub trait Swap {
         self.state().set(state::SwapState::Ready);
     }
 
+    /// The claimer should be able to claim when
+    /// - the owner has set the swap to `Ready` state and it's before timeout 1
+    /// - the claim window is within timeout 1 and timeout 2
+    /// - the provided claim view key is the right private key to the public key on monero
     #[endpoint(claim)]
-    fn claim(&self, claimer: ManagedAddress, claim_view_key: ManagedBuffer) {
-        require!(self.state().get() == state::SwapState::Ready, "swap is not in the ready state");
-        require!(self.claimer().get() == claimer, "claimer is not the same as the one set in the swap");
-        todo!("verify the claim commitment");
+    fn claim(&self, claim_view_key: ManagedBuffer) {
+        let caller = self.blockchain().get_caller();
+        require!(caller == self.claimer().get(), "only claimer address can perform this");
+
+        let swap_state = self.state().get();
+        require!(swap_state == state::SwapState::Ready, "cannot perform claim");
+
+        let block_timestamp = self.blockchain().get_block_timestamp();
+        require!(
+            block_timestamp < self.timeout_duration_1().get() && swap_state != state::SwapState::Ready,
+            "to early to claim"
+        );
+        require!(block_timestamp >= self.timeout_duration_2().get(), "to late to claim");
+
+        // TODO: Verify claim view key
+        self.send().direct_egld(&caller, &self.amount().get());
         self.state().set(state::SwapState::Claimed);
+        self.generate_claimed_event(&caller, block_timestamp);
     }
 
     #[storage_mapper("state")]
@@ -65,4 +85,7 @@ pub trait Swap {
 
     #[storage_mapper("owner")]
     fn owner(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[storage_mapper("amount")]
+    fn amount(&self) -> SingleValueMapper<BigUint>;
 }
