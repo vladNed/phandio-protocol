@@ -1,0 +1,12 @@
+[package]
+name = "swap-router-meta"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies.swap-router]
+path = ".."
+
+[dependencies.multiversx-sc-meta]
+version = "0.47.4"
+default-features = false

@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "./swap-router",
+    "./swap-router/meta",
+    "./swap",
+    "./swap/meta",
+]
