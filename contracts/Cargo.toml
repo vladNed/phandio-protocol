@@ -1,7 +1,8 @@
 [workspace]
 members = [
-    "./swap-router",
-    "./swap-router/meta",
-    "./swap",
-    "./swap/meta",
+    "swap-router",
+    "swap-router/meta",
+    "swap",
+    "swap/meta",
 ]
+resolver = "2"
