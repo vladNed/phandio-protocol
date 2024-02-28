@@ -2,3 +2,7 @@
 # Rust Contracts
 output/
 target/
+
+# IDE's
+.idea/
+.vscode/
