@@ -4,6 +4,7 @@ multiversx_sc::imports!();
 
 pub mod state;
 pub mod events;
+pub mod ed25519;
 
 #[multiversx_sc::contract]
 pub trait Swap: events::EventsModule {
@@ -38,20 +39,19 @@ pub trait Swap: events::EventsModule {
         require!(self.state().get() == state::SwapState::Created, "swap is not in the created state");
         require!(self.blockchain().get_block_timestamp() < self.timeout_duration_1().get(), "timeout_duration_1 has passed");
         self.state().set(state::SwapState::Ready);
+        self.ready_event(self.blockchain().get_block_timestamp());
     }
 
     /// The claimer should be able to claim when
-    /// - the owner has set the swap to `Ready` state and it's before timeout 1
+    /// - the owner has set the swap to `Ready` state, and it's before timeout 1
     /// - the claim window is within timeout 1 and timeout 2
-    /// - the provided claim view key is the right private key to the public key on monero
+    /// - the provided claim view key is the right private key to the public key on the other chain
     #[endpoint(claim)]
     fn claim(&self, claim_view_key: ManagedBuffer) {
         let caller = self.blockchain().get_caller();
         require!(caller == self.claimer().get(), "only claimer address can perform this");
-
         let swap_state = self.state().get();
         require!(swap_state == state::SwapState::Ready, "cannot perform claim");
-
         let block_timestamp = self.blockchain().get_block_timestamp();
         require!(
             block_timestamp < self.timeout_duration_1().get() && swap_state != state::SwapState::Ready,
@@ -59,10 +59,27 @@ pub trait Swap: events::EventsModule {
         );
         require!(block_timestamp >= self.timeout_duration_2().get(), "to late to claim");
 
-        // TODO: Verify claim view key
         self.send().direct_egld(&caller, &self.amount().get());
         self.state().set(state::SwapState::Claimed);
-        self.generate_claimed_event(&caller, block_timestamp);
+        self.claimed_event(&caller, block_timestamp);
+    }
+
+    #[endpoint(refund)]
+    fn refund(&self, refund_claim_key: ManagedBuffer) {
+        let caller = self.blockchain().get_caller();
+        require!(caller == self.owner().get(), "only owner address can perform this");
+        let swap_state = self.state().get();
+        require!(swap_state == state::SwapState::Ready, "cannot perform refund");
+        let block_timestamp = self.blockchain().get_block_timestamp();
+        require!(
+            block_timestamp < self.timeout_duration_2().get() &&
+            (block_timestamp > self.timeout_duration_1().get() || swap_state == state::SwapState::Ready),
+            "refund window is overdue"
+        );
+
+        // TODO: Verify refund claim key
+        self.send().direct_egld(&caller, &self.amount().get());
+        self.refund_event(block_timestamp);
     }
 
     #[storage_mapper("state")]

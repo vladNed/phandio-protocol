@@ -1,12 +1,12 @@
 [package]
 name = "swap"
-version = "0.0.0"
-authors = ["you"]
+version = "0.1.0"
+authors = ["Vlad Nedelcu <nedelcuvd@gmail.com>"]
 edition = "2021"
 publish = false
 
 [lib]
-path = "src/swap.rs"
+path = "src/lib.rs"
 
 [dependencies.multiversx-sc]
 version = "0.47.4"
