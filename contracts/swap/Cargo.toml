@@ -11,6 +11,11 @@ path = "src/lib.rs"
 [dependencies.multiversx-sc]
 version = "0.47.4"
 
+[dependencies.curve25519-dalek]
+version = "3"
+features = ["alloc", "u64_backend"]
+default-features = false
+
 [dev-dependencies]
 num-bigint = "0.4"
 

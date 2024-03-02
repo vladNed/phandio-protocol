@@ -6,5 +6,5 @@ pub enum SwapState {
     Created,
     Ready,
     Claimed,
-    Refunded
+    Refunded,
 }

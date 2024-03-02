@@ -2,12 +2,12 @@
 
 multiversx_sc::imports!();
 
-pub mod state;
+pub mod crypto;
 pub mod events;
-pub mod ed25519;
+pub mod state;
 
 #[multiversx_sc::contract]
-pub trait Swap: events::EventsModule {
+pub trait Swap: events::EventsModule + crypto::CryptoModule {
     #[init]
     fn init(
         &self,
@@ -17,7 +17,7 @@ pub trait Swap: events::EventsModule {
         refund_commitment: ManagedBuffer,
         claimer: ManagedAddress,
         owner: ManagedAddress,
-        amount: BigUint
+        amount: BigUint,
     ) {
         self.timeout_duration_1().set(timeout_duration_1);
         self.timeout_duration_2().set(timeout_duration_2);
@@ -35,9 +35,18 @@ pub trait Swap: events::EventsModule {
     #[endpoint(setReady)]
     fn set_ready(&self) {
         let caller = self.blockchain().get_caller();
-        require!(self.owner().get() == caller, "only the owner can set the swap to ready");
-        require!(self.state().get() == state::SwapState::Created, "swap is not in the created state");
-        require!(self.blockchain().get_block_timestamp() < self.timeout_duration_1().get(), "timeout_duration_1 has passed");
+        require!(
+            self.owner().get() == caller,
+            "only the owner can set the swap to ready"
+        );
+        require!(
+            self.state().get() == state::SwapState::Created,
+            "swap is not in the created state"
+        );
+        require!(
+            self.blockchain().get_block_timestamp() < self.timeout_duration_1().get(),
+            "timeout_duration_1 has passed"
+        );
         self.state().set(state::SwapState::Ready);
         self.ready_event(self.blockchain().get_block_timestamp());
     }
@@ -49,16 +58,26 @@ pub trait Swap: events::EventsModule {
     #[endpoint(claim)]
     fn claim(&self, claim_view_key: ManagedBuffer) {
         let caller = self.blockchain().get_caller();
-        require!(caller == self.claimer().get(), "only claimer address can perform this");
+        require!(
+            caller == self.claimer().get(),
+            "only claimer address can perform this"
+        );
         let swap_state = self.state().get();
-        require!(swap_state == state::SwapState::Ready, "cannot perform claim");
+        require!(
+            swap_state == state::SwapState::Ready,
+            "cannot perform claim"
+        );
         let block_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            block_timestamp < self.timeout_duration_1().get() && swap_state != state::SwapState::Ready,
+            block_timestamp < self.timeout_duration_1().get()
+                && swap_state != state::SwapState::Ready,
             "to early to claim"
         );
-        require!(block_timestamp >= self.timeout_duration_2().get(), "to late to claim");
-
+        require!(
+            block_timestamp >= self.timeout_duration_2().get(),
+            "to late to claim"
+        );
+        self.verify_commitment(&self.claim_commitment().get(), &claim_view_key);
         self.send().direct_egld(&caller, &self.amount().get());
         self.state().set(state::SwapState::Claimed);
         self.claimed_event(&caller, block_timestamp);
@@ -67,13 +86,20 @@ pub trait Swap: events::EventsModule {
     #[endpoint(refund)]
     fn refund(&self, refund_claim_key: ManagedBuffer) {
         let caller = self.blockchain().get_caller();
-        require!(caller == self.owner().get(), "only owner address can perform this");
+        require!(
+            caller == self.owner().get(),
+            "only owner address can perform this"
+        );
         let swap_state = self.state().get();
-        require!(swap_state == state::SwapState::Ready, "cannot perform refund");
+        require!(
+            swap_state == state::SwapState::Ready,
+            "cannot perform refund"
+        );
         let block_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            block_timestamp < self.timeout_duration_2().get() &&
-            (block_timestamp > self.timeout_duration_1().get() || swap_state == state::SwapState::Ready),
+            block_timestamp < self.timeout_duration_2().get()
+                && (block_timestamp > self.timeout_duration_1().get()
+                    || swap_state == state::SwapState::Ready),
             "refund window is overdue"
         );
 

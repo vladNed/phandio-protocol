@@ -1706,6 +1706,7 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 name = "swap"
 version = "0.1.0"
 dependencies = [
+ "curve25519-dalek",
  "multiversx-sc",
  "multiversx-sc-scenario",
  "num-bigint",
