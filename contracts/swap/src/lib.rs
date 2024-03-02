@@ -108,6 +108,7 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
         self.refund_event(block_timestamp);
     }
 
+    #[view(getState)]
     #[storage_mapper("state")]
     fn state(&self) -> SingleValueMapper<state::SwapState>;
 

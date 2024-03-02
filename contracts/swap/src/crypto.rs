@@ -1,9 +1,8 @@
 use core::marker::PhantomData;
 
 use curve25519_dalek::{constants::ED25519_BASEPOINT_POINT, scalar::Scalar};
-use multiversx_sc::module;
 use multiversx_sc::storage::mappers::SingleValueMapper;
-use multiversx_sc::{api::ManagedTypeApi, types::ManagedBuffer, require};
+use multiversx_sc::{api::ManagedTypeApi, require, types::ManagedBuffer, module};
 
 pub(crate) struct ManagedPublicKey<M: ManagedTypeApi> {
     pub data: ManagedBuffer<M>,
@@ -42,7 +41,6 @@ impl<M: ManagedTypeApi> ManagedPrivateKey<M> {
 
 #[module]
 pub trait CryptoModule {
-
     /// Verifies that the secret provided on claim is the correct private spend
     /// key for the public spend key provided.
     ///
@@ -56,7 +54,10 @@ pub trait CryptoModule {
         let secret_pk_hash = self.hash_key(&public_spend_key);
 
         let secret_commitment_handler = self.secret_commitment();
-        require!(secret_commitment_handler.is_empty(), "Secret already claimed");
+        require!(
+            secret_commitment_handler.is_empty(),
+            "Secret already claimed"
+        );
         require!(&secret_pk_hash == commitment, "Invalid secret provided");
 
         secret_commitment_handler.set(secret_pk_hash);
@@ -70,7 +71,7 @@ pub trait CryptoModule {
 
     /// The commitment of the secret provided on claim.
     /// This should be empty until a valid claim is completed.
+    #[view(getSecretCommitment)]
     #[storage_mapper("secret_commitment")]
     fn secret_commitment(&self) -> SingleValueMapper<ManagedBuffer>;
-
 }

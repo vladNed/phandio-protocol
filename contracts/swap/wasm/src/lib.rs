@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            3
+// Endpoints:                            5
 // Async Callback (empty):               1
-// Total number of exported functions:   5
+// Total number of exported functions:   7
 
 #![no_std]
 #![allow(internal_features)]
@@ -23,6 +23,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         setReady => set_ready
         claim => claim
         refund => refund
+        getState => state
+        getSecretCommitment => secret_commitment
     )
 }
 
