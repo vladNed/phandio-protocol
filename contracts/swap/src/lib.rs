@@ -77,7 +77,10 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
             block_timestamp >= self.timeout_duration_2().get(),
             "to late to claim"
         );
+        let secret_commitment_handler = self.secret_commitment();
+        require!(secret_commitment_handler.is_empty(), "secret already claimed");
         self.verify_commitment(&self.claim_commitment().get(), &claim_view_key);
+        secret_commitment_handler.set(claim_view_key);
         self.send().direct_egld(&caller, &self.amount().get());
         self.state().set(state::SwapState::Claimed);
         self.claimed_event(&caller, block_timestamp);
@@ -103,7 +106,7 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
             "refund window is overdue"
         );
 
-        // TODO: Verify refund claim key
+        self.verify_commitment(&self.refund_commitment().get(), &refund_claim_key);
         self.send().direct_egld(&caller, &self.amount().get());
         self.refund_event(block_timestamp);
     }
@@ -132,4 +135,10 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
 
     #[storage_mapper("amount")]
     fn amount(&self) -> SingleValueMapper<BigUint>;
+
+    /// The commitment of the secret provided on claim.
+    /// This should be empty until a valid claim is completed.
+    #[view(getSecretCommitment)]
+    #[storage_mapper("secret_commitment")]
+    fn secret_commitment(&self) -> SingleValueMapper<ManagedBuffer>;
 }

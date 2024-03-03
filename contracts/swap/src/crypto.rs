@@ -4,6 +4,8 @@ use curve25519_dalek::{constants::ED25519_BASEPOINT_POINT, scalar::Scalar};
 use multiversx_sc::storage::mappers::SingleValueMapper;
 use multiversx_sc::{api::ManagedTypeApi, require, types::ManagedBuffer, module};
 
+/// Wrapper over an ed25519 public key which is an edwards point on the
+/// curve25519 translated as a managed buffer.
 pub(crate) struct ManagedPublicKey<M: ManagedTypeApi> {
     pub data: ManagedBuffer<M>,
 }
@@ -15,6 +17,7 @@ impl<M: ManagedTypeApi> From<[u8; 32]> for ManagedPublicKey<M> {
     }
 }
 
+/// Wrapper over an ed25519 scalar which is a 256-bit integer
 pub(crate) struct ManagedPrivateKey<M: ManagedTypeApi> {
     data: Scalar,
     _phantom: PhantomData<M>,
@@ -39,6 +42,8 @@ impl<M: ManagedTypeApi> ManagedPrivateKey<M> {
     }
 }
 
+
+/// Module used to verify ed25519 keys.
 #[module]
 pub trait CryptoModule {
     /// Verifies that the secret provided on claim is the correct private spend
@@ -52,15 +57,7 @@ pub trait CryptoModule {
         let private_spend_key = ManagedPrivateKey::from(secret.clone());
         let public_spend_key = private_spend_key.public_spend_keu();
         let secret_pk_hash = self.hash_key(&public_spend_key);
-
-        let secret_commitment_handler = self.secret_commitment();
-        require!(
-            secret_commitment_handler.is_empty(),
-            "Secret already claimed"
-        );
         require!(&secret_pk_hash == commitment, "Invalid secret provided");
-
-        secret_commitment_handler.set(secret_pk_hash);
     }
 
     /// Using keccak256, hashes the public spend key.
@@ -68,10 +65,4 @@ pub trait CryptoModule {
         let key_hash = self.crypto().keccak256(key.data.clone());
         key_hash.as_managed_buffer().clone()
     }
-
-    /// The commitment of the secret provided on claim.
-    /// This should be empty until a valid claim is completed.
-    #[view(getSecretCommitment)]
-    #[storage_mapper("secret_commitment")]
-    fn secret_commitment(&self) -> SingleValueMapper<ManagedBuffer>;
 }
