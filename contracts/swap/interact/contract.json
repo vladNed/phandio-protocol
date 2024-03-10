@@ -1,0 +1,16 @@
+{
+    "proxy": "https://testnet-gateway.multiversx.com",
+    "chain": "T",
+    "gas_limit": 60000000,
+    "pem_path": "<replace_your_pem_key_path>",
+    "deploy_args": [
+        "1000",
+        "1000",
+        "str:test",
+        "str:test",
+        "erd1krzz9hzh30npwuyy7vc3e6p3z7mp5rv20hnkq4xtxxnhrhtzhwsqz76cxg",
+        "erd1krzz9hzh30npwuyy7vc3e6p3z7mp5rv20hnkq4xtxxnhrhtzhwsqz76cxg",
+        "str:1000000000000000000"
+    ],
+    "contract_address": "erd1qqqqqqqqqqqqqpgqj8hy3xwxn82m3usk9affc8tsacvfd0x0hwsq0fe34x"
+}

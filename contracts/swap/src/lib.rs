@@ -29,6 +29,9 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
         self.amount().set(amount);
     }
 
+    #[upgrade]
+    fn upgrade(&self) {}
+
     /// The owner should `setReady` when
     /// - the claimer has locked the swap funds and the owner verified this
     /// - the duration of timeout_duration_1 has not passed

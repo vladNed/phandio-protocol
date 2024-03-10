@@ -8,6 +8,14 @@ publish = false
 [lib]
 path = "src/lib.rs"
 
+[[bin]]
+name = "deploy"
+path = "src/bin/deploy.rs"
+features = ["serde_support"]
+
+[features]
+serde_support = ["serde", "serde_json"]
+
 [dependencies.multiversx-sc]
 version = "0.47.4"
 
@@ -21,3 +29,12 @@ num-bigint = "0.4"
 
 [dev-dependencies.multiversx-sc-scenario]
 version = "0.47.4"
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+optional = true
+
+[dependencies.serde_json]
+version = "1.0"
+optional = true

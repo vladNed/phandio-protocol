@@ -1,7 +1,6 @@
 use core::marker::PhantomData;
 
 use curve25519_dalek::{constants::ED25519_BASEPOINT_POINT, scalar::Scalar};
-use multiversx_sc::storage::mappers::SingleValueMapper;
 use multiversx_sc::{api::ManagedTypeApi, require, types::ManagedBuffer, module};
 
 /// Wrapper over an ed25519 public key which is an edwards point on the
