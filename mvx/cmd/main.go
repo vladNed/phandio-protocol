@@ -3,29 +3,29 @@ package main
 import (
 	"log"
 	// "github.com/mvx/config"
+	"github.com/mvx/config"
 	"github.com/mvx/contract"
 )
 
 func main() {
 	log.Println("Starting MVX CLI")
-	// cfg, err := config.LoadConfig()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		panic(err)
+	}
 	log.Println("Configuration loaded")
 
 	a := contract.DeploySwapContractRequest{
-		TimeoutDurationOne: 100,
-		TimeoutDurationTwo: 200,
+		TimeoutDurationOne: 1000,
+		TimeoutDurationTwo: 2000,
 		ClaimCommitment: "hashOne",
 		RefundCommitment: "hashTwo",
-		ClaimerAddress: "erd1qqqqqqqqqqqqqpgqftd63554n7e89t6ek7k8n5aweydhcsh0hwsq24k362",
+		ClaimerAddress: "erd1krzz9hzh30npwuyy7vc3e6p3z7mp5rv20hnkq4xtxxnhrhtzhwsqz76cxg",
 	}
-	serializedData, err := a.Serialize()
+	txHash, err := contract.DeploySwapContract(cfg, &a, "1000000000000000000")
 	if err != nil {
-		log.Fatalln("Error serializing data: ", err)
+		log.Fatalln("Error deploying swap contract: ", err)
+		panic(err)
 	}
-	log.Println(serializedData)
-
-	// TODO: Add your code here for CLI
+	log.Println("Swap contract deployed. Transaction hash: ", txHash)
 }

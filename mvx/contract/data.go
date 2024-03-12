@@ -31,7 +31,6 @@ func (r *DeploySwapContractRequest) Serialize() (string, error) {
 	timeoutTwoSerialized := fmt.Sprintf("%X", timeoutTwoBuf)
 
 	// Serialize the claim commitment
-
 	claimCommitmentBytes := []byte(r.ClaimCommitment)
 	claimCommitmentSerialized := hex.EncodeToString(claimCommitmentBytes)
 
@@ -50,7 +49,7 @@ func (r *DeploySwapContractRequest) Serialize() (string, error) {
 	claimerAddressSerialized := hex.EncodeToString(claimerAddressBytes)
 
 	data := fmt.Sprintf(
-		"createSwap@%s@%s@%s@%s@%s@",
+		"create_swap@%s@%s@%s@%s@%s",
 		timeoutOneSerialized,
 		timeoutTwoSerialized,
 		claimCommitmentSerialized,
