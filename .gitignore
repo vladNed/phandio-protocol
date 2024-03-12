@@ -6,3 +6,6 @@ target/
 # IDE's
 .idea/
 .vscode/
+
+# Local envs
+.env

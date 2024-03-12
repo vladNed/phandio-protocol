@@ -1729,6 +1729,8 @@ dependencies = [
  "multiversx-sc",
  "multiversx-sc-scenario",
  "num-bigint",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

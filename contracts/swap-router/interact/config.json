@@ -1,0 +1,10 @@
+{
+    "proxy": "https://testnet-gateway.multiversx.com",
+    "chain": "T",
+    "gas_limit": 60000000,
+    "pem_path": "/home/vladned/erd-wallets/IndexOne.pem",
+    "deploy_args": [
+        "erd1qqqqqqqqqqqqqpgqj8hy3xwxn82m3usk9affc8tsacvfd0x0hwsq0fe34x"
+    ],
+    "contract_address": "erd1qqqqqqqqqqqqqpgqftd63554n7e89t6ek7k8n5aweydhcsh0hwsq24k362"
+}
