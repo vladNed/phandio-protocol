@@ -6,6 +6,7 @@ import (
 	"github.com/mvx/config"
 )
 
+
 func DeploySwapContract(
 	config *config.Config,
 	deploySwapRequest *DeploySwapContractRequest,
@@ -17,11 +18,11 @@ func DeploySwapContract(
 		return "", err
 	}
 
-	txHash, err := ContractExecute(config, config.SwapRouterContractAddress, value, []byte(txData))
+	txResp, err := ContractExecute(config, config.SwapRouterContractAddress, value, []byte(txData))
 	if err != nil {
 		log.Fatalln("Error executing contract: ", err)
 		return "", err
 	}
 
-	return txHash, nil
+	return txResp.respAddress, nil
 }

@@ -49,7 +49,6 @@ func GetWalletNonce(config *config.Config) (uint64, error) {
 		return 0, err
 	}
 
-
 	accountInfo, err := proxy.GetAccount(context.Background(), address)
 	if err != nil {
 		log.Fatal("Error getting account info: ", err)
@@ -99,8 +98,8 @@ func ContractExecute(
 	config *config.Config,
 	contractAddress string,
 	value string,
-	data []byte,
-) (string, error) {
+	txData []byte,
+) (*DeploySwapContractResponse, error) {
 	log.Println("Calling contract. Contract address: ", contractAddress)
 	args := blockchain.ArgsProxy{
 		ProxyURL:            config.ProxyURL,
@@ -114,69 +113,100 @@ func ContractExecute(
 	proxy, err := blockchain.NewProxy(args)
 	if err != nil {
 		log.Fatal("Error creating proxy: ", err)
-		return "", err
+		return nil, err
 	}
 
 	wallet := interactors.NewWallet()
 	privateKey, err := wallet.LoadPrivateKeyFromPemData([]byte(config.WalletPemData))
 	if err != nil {
 		log.Fatal("Error loading private key: ", err)
-		return "", err
+		return nil, err
 	}
 
 	address, err := wallet.GetAddressFromPrivateKey(privateKey)
 	if err != nil {
 		log.Fatal("Error getting address from private key: ", err)
-		return "", err
+		return nil, err
 	}
 
 	netConfigs, err := proxy.GetNetworkConfig(context.Background())
 	if err != nil {
 		log.Fatalln("Error getting network config: ", err)
-		return "", err
+		return nil, err
 	}
 
 	tx, _, err := proxy.GetDefaultTransactionArguments(context.Background(), address, netConfigs)
 	if err != nil {
 		log.Fatal("Error getting default transaction arguments: ", err)
-		return "", err
+		return nil, err
 	}
-	tx.Data = data
+	tx.Data = txData
 	tx.Receiver = contractAddress
 	tx.Value = value
-	tx.GasLimit = 6000000
+	tx.GasLimit = 9_000_000
 
 	txBuilder, err := builders.NewTxBuilder(cryptoProvider.NewSigner())
 	if err != nil {
 		// TODO: Log error
-		return "", err
+		return nil, err
 	}
 
 	holder, _ := cryptoProvider.NewCryptoComponentsHolder(keyGen, privateKey)
 	ti, err := interactors.NewTransactionInteractor(proxy, txBuilder)
 	if err != nil {
 		// TODO: Log error
-		return "", err
+		return nil, err
 	}
 	err = ti.ApplyUserSignature(holder, &tx)
 	if err != nil {
 		// TODO: Log error
-		return "", err
+		return nil, err
 	}
 	tx.Version = 2
 	tx.Options = 0
 	err = ti.ApplyUserSignature(holder, &tx)
 	if err != nil {
 		log.Fatalln("Error applying user signature: ", err)
-		return "", nil
+		return nil, nil
 	}
 	ti.AddTransaction(&tx)
 	log.Println("Sending transaction...")
 	hashes, err := ti.SendTransactionsAsBunch(context.Background(), 10)
 	if err != nil {
 		log.Fatalln("Error sending transaction: ", err)
-		return "", err
+		return nil, err
+	}
+	log.Println("Transaction sent. Hash: ", hashes[0])
+
+	var response *data.TransactionInfo
+	poolingExitStatus := 0
+	for i := 0; i < 10; i++ {
+		var respErr error
+		response, respErr = proxy.GetTransactionInfoWithResults(context.Background(), hashes[0])
+		if respErr != nil {
+			log.Fatal("Error getting transaction info with results: ", respErr)
+			return nil, respErr
+		}
+
+		if response.Data.Transaction.Status == "success" {
+			poolingExitStatus = 1
+			break
+		}
+
+		time.Sleep(2 * time.Second)
+		log.Println("Pooling tx result ....")
 	}
 
-	return hashes[0], nil
+	if poolingExitStatus == 0 {
+		log.Fatal("Error: transaction could not be processed")
+		return nil, err
+	}
+
+	txResponse, err := LoadFromTxOnNetwork(response.Data.Transaction)
+	if err != nil {
+		log.Fatal("Error loading from transaction on network: ", err)
+		return nil, err
+	}
+
+	return txResponse, nil
 }

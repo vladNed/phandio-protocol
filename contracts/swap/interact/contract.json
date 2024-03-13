@@ -2,7 +2,7 @@
     "proxy": "https://testnet-gateway.multiversx.com",
     "chain": "T",
     "gas_limit": 60000000,
-    "pem_path": "<replace_your_pem_key_path>",
+    "pem_path": "/home/vladned/erd-wallets/IndexOne.pem",
     "deploy_args": [
         "1000",
         "1000",

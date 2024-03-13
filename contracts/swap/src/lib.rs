@@ -9,6 +9,7 @@ pub mod state;
 #[multiversx_sc::contract]
 pub trait Swap: events::EventsModule + crypto::CryptoModule {
     #[init]
+    #[payable("EGLD")]
     fn init(
         &self,
         timeout_duration_1: u64,
@@ -17,7 +18,6 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
         refund_commitment: ManagedBuffer,
         claimer: ManagedAddress,
         owner: ManagedAddress,
-        amount: BigUint,
     ) {
         self.timeout_duration_1().set(timeout_duration_1);
         self.timeout_duration_2().set(timeout_duration_2);
@@ -26,7 +26,7 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
         self.claimer().set(claimer);
         self.owner().set(owner);
         self.state().set(state::SwapState::Created);
-        self.amount().set(amount);
+        self.amount().set(self.call_value().egld_value().clone_value());
     }
 
     #[upgrade]

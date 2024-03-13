@@ -3,9 +3,13 @@ package contract
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/multiversx/mx-sdk-go/data"
 	"log"
+	"strings"
+
+	"github.com/multiversx/mx-chain-core-go/data/transaction"
+	"github.com/multiversx/mx-sdk-go/data"
 )
 
 type DeploySwapContractRequest struct {
@@ -49,7 +53,7 @@ func (r *DeploySwapContractRequest) Serialize() (string, error) {
 	claimerAddressSerialized := hex.EncodeToString(claimerAddressBytes)
 
 	data := fmt.Sprintf(
-		"create_swap@%s@%s@%s@%s@%s",
+		"createSwap@%s@%s@%s@%s@%s",
 		timeoutOneSerialized,
 		timeoutTwoSerialized,
 		claimCommitmentSerialized,
@@ -58,4 +62,67 @@ func (r *DeploySwapContractRequest) Serialize() (string, error) {
 	)
 
 	return data, nil
+}
+
+type DeploySwapContractResponse struct {
+	respAddress string
+	status      string
+}
+
+func LoadFromTxOnNetwork(txData data.TransactionOnNetwork) (*DeploySwapContractResponse, error) {
+	status := getDeploySwapTxStatus(txData.Logs.Events)
+	if status != "successful" {
+		return nil, errors.New("transaction failed")
+	}
+
+	scResult, err := deserializeDeploySwapScResults(string(txData.ScResults[0].Data))
+	if err != nil {
+		log.Fatalln("Error deserializing deploy swap contract results: ", err)
+		return nil, err
+	}
+
+	return &DeploySwapContractResponse{
+		respAddress: scResult[1],
+		status:      status,
+	}, nil
+}
+
+func deserializeDeploySwapScResults(txData string) ([]string, error) {
+	parts := strings.Split(txData, "@")
+	results := []string{}
+
+	// Deserialize the status
+	status, err := hex.DecodeString(parts[1])
+	if err != nil {
+		log.Fatalln("Error deserializing status: ", err)
+		return nil, err
+	}
+	results = append(results, string(status))
+
+	// Deserialize the swap contract address
+	swapContractAddress, err := hex.DecodeString(parts[2])
+	if err != nil {
+		log.Fatalln("Error deserializing swap contract address: ", err)
+		return nil, err
+	}
+	address := data.NewAddressFromBytes(swapContractAddress)
+	addressString, err := address.AddressAsBech32String()
+	if err != nil {
+		log.Fatalln("Error converting swap contract address to bech32: ", err)
+		return nil, err
+	}
+	results = append(results, addressString)
+
+
+	return results, nil
+}
+
+func getDeploySwapTxStatus(txLogEvents []*transaction.Events) string {
+	for _, event := range txLogEvents {
+		if string(event.Identifier) == "completedTxEvent" {
+			return "successful"
+		}
+	}
+
+	return "failed"
 }

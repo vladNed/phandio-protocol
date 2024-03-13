@@ -36,6 +36,7 @@ impl ContractConfig {
             "contract",
             "deploy",
             "--recall-nonce",
+            "--metadata-payable",
             "--bytecode=output/swap-router.wasm",
             format!("--pem={}", self.pem_path).as_str(),
             format!("--proxy={}", self.proxy).as_str(),
@@ -66,7 +67,8 @@ impl ContractConfig {
             "upgrade",
             self.contract_address.as_str(),
             "--recall-nonce",
-            "--bytecode=output/swap.wasm",
+            "--metadata-payable",
+            "--bytecode=output/swap-router.wasm",
             format!("--pem={}", self.pem_path).as_str(),
             format!("--proxy={}", self.proxy).as_str(),
             format!("--chain={}", self.chain).as_str(),
@@ -88,5 +90,5 @@ impl ContractConfig {
 
 fn main() {
     let config = ContractConfig::load();
-    config.deploy_contract();
+    config._upgrade_contract();
 }
