@@ -36,6 +36,7 @@ impl ContractConfig {
             "contract",
             "deploy",
             "--recall-nonce",
+            "--value=1000000000000",
             "--metadata-payable-by-sc",
             "--bytecode=output/swap.wasm",
             format!("--pem={}", self.pem_path).as_str(),
@@ -90,5 +91,5 @@ impl ContractConfig {
 
 fn main() {
     let config = ContractConfig::load();
-    config.upgrade_contract();
+    config.deploy_contract();
 }

@@ -6,6 +6,8 @@ pub mod crypto;
 pub mod events;
 pub mod state;
 
+const CONTRACT_CURRENT_VERSION : &str = "1.0.0";
+
 #[multiversx_sc::contract]
 pub trait Swap: events::EventsModule + crypto::CryptoModule {
     #[init]
@@ -19,14 +21,16 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
         claimer: ManagedAddress,
         owner: ManagedAddress,
     ) {
-        self.timeout_duration_1().set(timeout_duration_1);
-        self.timeout_duration_2().set(timeout_duration_2);
-        self.claim_commitment().set(claim_commitment);
-        self.refund_commitment().set(refund_commitment);
-        self.claimer().set(claimer);
-        self.owner().set(owner);
-        self.state().set(state::SwapState::Created);
-        self.amount().set(self.call_value().egld_value().clone_value());
+        self.state().set(state::SwapStateData::new(
+            timeout_duration_1,
+            timeout_duration_2,
+            claim_commitment,
+            refund_commitment,
+            claimer,
+            owner,
+            self.call_value().egld_value().clone_value(),
+        ));
+        self.version().set(ManagedBuffer::from(CONTRACT_CURRENT_VERSION));
     }
 
     #[upgrade]
@@ -38,19 +42,23 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
     #[endpoint(setReady)]
     fn set_ready(&self) {
         let caller = self.blockchain().get_caller();
+        let state_handler = self.state();
+        let mut swap_state = state_handler.get();
         require!(
-            self.owner().get() == caller,
+            swap_state.owner == caller,
             "only the owner can set the swap to ready"
         );
         require!(
-            self.state().get() == state::SwapState::Created,
+            swap_state.state == state::SwapState::Created,
             "swap is not in the created state"
         );
         require!(
-            self.blockchain().get_block_timestamp() < self.timeout_duration_1().get(),
+            self.blockchain().get_block_timestamp() < swap_state.timeout_duration_1,
             "timeout_duration_1 has passed"
         );
-        self.state().set(state::SwapState::Ready);
+
+        swap_state.state = state::SwapState::Ready;
+        state_handler.set(swap_state);
         self.ready_event(self.blockchain().get_block_timestamp());
     }
 
@@ -61,87 +69,79 @@ pub trait Swap: events::EventsModule + crypto::CryptoModule {
     #[endpoint(claim)]
     fn claim(&self, claim_view_key: ManagedBuffer) {
         let caller = self.blockchain().get_caller();
+        let state_handler = self.state();
+        let mut swap_state = state_handler.get();
         require!(
-            caller == self.claimer().get(),
+            caller == swap_state.claimer,
             "only claimer address can perform this"
         );
-        let swap_state = self.state().get();
         require!(
-            swap_state == state::SwapState::Ready,
+            swap_state.state == state::SwapState::Ready,
             "cannot perform claim"
         );
         let block_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            block_timestamp < self.timeout_duration_1().get()
-                && swap_state != state::SwapState::Ready,
+            block_timestamp < swap_state.timeout_duration_1
+                && swap_state.state != state::SwapState::Ready,
             "to early to claim"
         );
         require!(
-            block_timestamp >= self.timeout_duration_2().get(),
+            block_timestamp >= swap_state.timeout_duration_2,
             "to late to claim"
         );
         let secret_commitment_handler = self.secret_commitment();
-        require!(secret_commitment_handler.is_empty(), "secret already claimed");
-        self.verify_commitment(&self.claim_commitment().get(), &claim_view_key);
+        require!(
+            secret_commitment_handler.is_empty(),
+            "secret already claimed"
+        );
+        self.verify_commitment(&swap_state.claim_commitment, &claim_view_key);
         secret_commitment_handler.set(claim_view_key);
-        self.send().direct_egld(&caller, &self.amount().get());
-        self.state().set(state::SwapState::Claimed);
+        self.send().direct_egld(&caller, &swap_state.amount);
+        swap_state.state = state::SwapState::Claimed;
+        state_handler.set(swap_state);
         self.claimed_event(&caller, block_timestamp);
     }
 
     #[endpoint(refund)]
     fn refund(&self, refund_claim_key: ManagedBuffer) {
         let caller = self.blockchain().get_caller();
+        let state_handler = self.state();
+        let mut swap_state = state_handler.get();
         require!(
-            caller == self.owner().get(),
+            caller == swap_state.owner,
             "only owner address can perform this"
         );
-        let swap_state = self.state().get();
         require!(
-            swap_state == state::SwapState::Ready,
+            swap_state.state == state::SwapState::Ready,
             "cannot perform refund"
         );
         let block_timestamp = self.blockchain().get_block_timestamp();
         require!(
-            block_timestamp < self.timeout_duration_2().get()
-                && (block_timestamp > self.timeout_duration_1().get()
-                    || swap_state == state::SwapState::Ready),
+            block_timestamp < swap_state.timeout_duration_2
+                && (block_timestamp > swap_state.timeout_duration_1
+                    || swap_state.state == state::SwapState::Ready),
             "refund window is overdue"
         );
 
-        self.verify_commitment(&self.refund_commitment().get(), &refund_claim_key);
-        self.send().direct_egld(&caller, &self.amount().get());
+        self.verify_commitment(&swap_state.refund_commitment, &refund_claim_key);
+        self.send().direct_egld(&caller, &swap_state.amount);
+        swap_state.state = state::SwapState::Refunded;
+        state_handler.set(swap_state);
         self.refund_event(block_timestamp);
     }
 
+    /// Represents the details of the swap both parties agreed on.
     #[view(getState)]
     #[storage_mapper("state")]
-    fn state(&self) -> SingleValueMapper<state::SwapState>;
-
-    #[storage_mapper("timeout_duration_1")]
-    fn timeout_duration_1(&self) -> SingleValueMapper<u64>;
-
-    #[storage_mapper("timeout_duration_2")]
-    fn timeout_duration_2(&self) -> SingleValueMapper<u64>;
-
-    #[storage_mapper("claim_commitment")]
-    fn claim_commitment(&self) -> SingleValueMapper<ManagedBuffer>;
-
-    #[storage_mapper("refund_commitment")]
-    fn refund_commitment(&self) -> SingleValueMapper<ManagedBuffer>;
-
-    #[storage_mapper("claimer")]
-    fn claimer(&self) -> SingleValueMapper<ManagedAddress>;
-
-    #[storage_mapper("owner")]
-    fn owner(&self) -> SingleValueMapper<ManagedAddress>;
-
-    #[storage_mapper("amount")]
-    fn amount(&self) -> SingleValueMapper<BigUint>;
+    fn state(&self) -> SingleValueMapper<state::SwapStateData<Self::Api>>;
 
     /// The commitment of the secret provided on claim.
     /// This should be empty until a valid claim is completed.
     #[view(getSecretCommitment)]
     #[storage_mapper("secret_commitment")]
     fn secret_commitment(&self) -> SingleValueMapper<ManagedBuffer>;
+
+    #[view(getVersion)]
+    #[storage_mapper("version")]
+    fn version(&self) -> SingleValueMapper<ManagedBuffer>;
 }

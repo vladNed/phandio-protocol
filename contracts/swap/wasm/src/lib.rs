@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            6
+// Endpoints:                            7
 // Async Callback (empty):               1
-// Total number of exported functions:   8
+// Total number of exported functions:   9
 
 #![no_std]
 #![allow(internal_features)]
@@ -26,6 +26,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         refund => refund
         getState => state
         getSecretCommitment => secret_commitment
+        getVersion => version
     )
 }
 
