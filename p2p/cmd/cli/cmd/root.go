@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"bbogdan95/moneroutils/pkg/common"
-	mcrypto "bbogdan95/moneroutils/pkg/crypto/monero"
+	"github.com/mvx-mnr-atomic/p2p/internal/monero/common"
+	mcrypto "github.com/mvx-mnr-atomic/p2p/internal/monero/crypto"
 
 	"github.com/spf13/cobra"
 )
@@ -147,4 +147,9 @@ func init() {
 	rootCmd.AddCommand(generatePubFromPriv)
 	rootCmd.AddCommand(generateViewFromSpend)
 	rootCmd.AddCommand(sumPrivateSpendKeys)
+}
+
+
+func main() {
+	Execute()
 }

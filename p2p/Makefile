@@ -8,9 +8,13 @@ run-test-server:
 	@echo "Running test server"
 	@cd ./test-app && http-server -p 3000
 
+build-cli:
+	go build -o ./bin/cli ./cmd/cli/
+
 help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
 	@echo "  build-wasm  - Build wasm"
 	@echo "  run-test-server  - Run test server"
+	@echo "  build-cli  - Build cli"

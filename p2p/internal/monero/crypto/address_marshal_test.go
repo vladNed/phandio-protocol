@@ -1,4 +1,4 @@
-package mcrypto
+package crypto
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"bbogdan95/moneroutils/pkg/common"
+	"github.com/mvx-mnr-atomic/p2p/internal/monero/common"
 )
 
 func TestAddress_MarshalText_roundTrip(t *testing.T) {

@@ -1,9 +1,10 @@
-package mcrypto
+package crypto
 
 import (
 	"math/big"
 
-	"bbogdan95/moneroutils/pkg/common"
+	"github.com/mvx-mnr-atomic/p2p/internal/monero/common"
+
 )
 
 // curveOrder, often called "l", is the prime used by ed25519

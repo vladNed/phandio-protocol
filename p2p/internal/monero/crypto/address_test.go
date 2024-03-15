@@ -1,9 +1,9 @@
-package mcrypto
+package crypto
 
 import (
 	"testing"
 
-	"bbogdan95/moneroutils/pkg/common"
+	"github.com/mvx-mnr-atomic/p2p/internal/monero/common"
 
 	"github.com/stretchr/testify/require"
 )

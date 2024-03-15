@@ -1,12 +1,11 @@
-package mcrypto
+package crypto
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
 
-	"bbogdan95/moneroutils/pkg/common"
-	"bbogdan95/moneroutils/pkg/crypto"
+	"github.com/mvx-mnr-atomic/p2p/internal/monero/common"
 )
 
 // Network is the Monero network type
@@ -159,7 +158,7 @@ func (a *Address) ValidateEnv(env common.Environment) error {
 }
 
 func getChecksum(data ...[]byte) (result [4]byte) {
-	keccak256 := crypto.Keccak256(data...)
+	keccak256 := Keccak256(data...)
 	copy(result[:], keccak256[:4])
 	return
 }

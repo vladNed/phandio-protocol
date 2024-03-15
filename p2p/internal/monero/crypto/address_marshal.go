@@ -1,4 +1,4 @@
-package mcrypto
+package crypto
 
 // MarshalText serializes the Monero Address type with some extra validation.
 func (a *Address) MarshalText() ([]byte, error) {

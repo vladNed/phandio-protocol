@@ -1,4 +1,4 @@
-package mcrypto
+package crypto
 
 import (
 	"encoding/hex"

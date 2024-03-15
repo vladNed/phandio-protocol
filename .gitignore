@@ -9,3 +9,6 @@ target/
 
 # Local envs
 .env
+
+# Builds
+*.wasm

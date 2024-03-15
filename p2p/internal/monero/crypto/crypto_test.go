@@ -1,4 +1,4 @@
-package mcrypto
+package crypto
 
 import (
 	"encoding/hex"
@@ -8,8 +8,7 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 
-	"bbogdan95/moneroutils/pkg/common"
-	"bbogdan95/moneroutils/pkg/crypto"
+	"github.com/mvx-mnr-atomic/p2p/internal/monero/common"
 )
 
 func TestPrivateKeyPairToAddress(t *testing.T) {
@@ -59,7 +58,7 @@ func TestGeneratePrivateKeyPair(t *testing.T) {
 
 func TestKeccak256(t *testing.T) {
 	res := ethcrypto.Keccak256([]byte{1})
-	res2 := crypto.Keccak256([]byte{1})
+	res2 := Keccak256([]byte{1})
 	require.Equal(t, res, res2[:])
 }
 

@@ -1,4 +1,4 @@
-package mcrypto
+package crypto
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"bbogdan95/moneroutils/pkg/common/vjson"
+	"github.com/mvx-mnr-atomic/p2p/internal/monero/common/vjson"
 )
 
 func TestKey_Marshal_success(t *testing.T) {

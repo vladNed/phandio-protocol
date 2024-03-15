@@ -16,8 +16,8 @@ type Peer struct {
 	logger func(string)
 }
 
-// / NewPeer creates a new webRTC peer connection with a dedicated
-// / data channel.
+// NewPeer creates a new webRTC peer connection with a dedicated
+// data channel.
 func NewPeer(logger func(string)) (*Peer, error) {
 	rtcCfg := GetICEConfiguration()
 	peerConnection, err := webrtc.NewPeerConnection(rtcCfg)

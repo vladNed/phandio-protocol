@@ -1,4 +1,4 @@
-package mcrypto
+package crypto
 
 import (
 	"crypto/rand"
@@ -6,8 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-
-	"bbogdan95/moneroutils/pkg/crypto"
 
 	ed25519 "filippo.io/edwards25519"
 )
@@ -137,7 +135,7 @@ func (k *PrivateSpendKey) AsPrivateKeyPair() (*PrivateKeyPair, error) {
 
 // View returns the private view key corresponding to the PrivateSpendKey.
 func (k *PrivateSpendKey) View() (*PrivateViewKey, error) {
-	h := crypto.Keccak256(k.key.Bytes())
+	h := Keccak256(k.key.Bytes())
 	// We can't use SetBytesWithClamping below, which would do the sc_reduce32 computation
 	// for us, because standard monero wallets do not modify the first and last byte when
 	// calculating the view key.

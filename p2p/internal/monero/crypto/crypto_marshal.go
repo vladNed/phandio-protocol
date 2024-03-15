@@ -1,4 +1,4 @@
-package mcrypto
+package crypto
 
 import (
 	"encoding/hex"
@@ -8,7 +8,7 @@ import (
 
 	ed25519 "filippo.io/edwards25519"
 
-	"bbogdan95/moneroutils/pkg/common/vjson"
+	"github.com/mvx-mnr-atomic/p2p/internal/monero/common/vjson"
 )
 
 // create a local types that we can marshal
