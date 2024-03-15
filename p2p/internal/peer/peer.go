@@ -10,12 +10,15 @@ import (
 type Peer struct {
 	LocalConnection *webrtc.PeerConnection
 	DataChannel     *webrtc.DataChannel
-	state           PeerState
+	State           PeerState
+
+	// TODO: This should be deleted as its just for test
+	logger func(string)
 }
 
 // / NewPeer creates a new webRTC peer connection with a dedicated
 // / data channel.
-func NewPeer() (*Peer, error) {
+func NewPeer(logger func(string)) (*Peer, error) {
 	rtcCfg := GetICEConfiguration()
 	peerConnection, err := webrtc.NewPeerConnection(rtcCfg)
 	if err != nil {
@@ -23,7 +26,7 @@ func NewPeer() (*Peer, error) {
 		return nil, err
 	}
 
-	peerDataChannel, err := peerConnection.CreateDataChannel(DATA_CHANNEL_LABEL, nil)
+	dataChannel, err := peerConnection.CreateDataChannel(DATA_CHANNEL_LABEL, nil)
 	if err != nil {
 		log.Fatalln("Could not create data channel. err:", err)
 		return nil, err
@@ -31,16 +34,25 @@ func NewPeer() (*Peer, error) {
 
 	peer := &Peer{
 		LocalConnection: peerConnection,
-		DataChannel:     peerDataChannel,
-		state:           PeerStateDefault,
+		DataChannel:     dataChannel,
+		State:           PeerStateDefault,
+		logger:          logger,
 	}
 
 	peer.setupConnectionCallbacks()
 	peer.setupDataChannelProtocol()
 
+	initialEmptyOffer, err := peer.LocalConnection.CreateOffer(&webrtc.OfferOptions{
+		ICERestart: true,
+	})
+	if err != nil {
+		log.Fatalln("Could not create initial offer. err:", err)
+		return nil, err
+	}
+	peer.LocalConnection.SetLocalDescription(initialEmptyOffer)
+
 	return peer, nil
 }
-
 
 func (p *Peer) setupConnectionCallbacks() {
 	p.LocalConnection.OnConnectionStateChange(func(connectionState webrtc.PeerConnectionState) {
@@ -49,22 +61,25 @@ func (p *Peer) setupConnectionCallbacks() {
 		switch connectionState {
 		case webrtc.PeerConnectionStateConnecting:
 			log.Println("Connection state. Initial Peer state 0")
-			p.state = PeerState0
+			p.State = PeerState0
 		case webrtc.PeerConnectionStateConnected:
-			if p.state != PeerState0 {
+			if p.State != PeerState0 {
 				log.Fatalln("Cannot connect to peer. Invalid state")
 				os.Exit(1)
 			}
 			log.Println("Connection established. Peer state is now 1.")
-			p.state = PeerState1
+			p.State = PeerState1
 		case webrtc.PeerConnectionStateDisconnected:
 			log.Println("Peer connection state is disconnected")
-			p.state = PeerStateDefault
+			p.State = PeerStateDefault
 		case webrtc.PeerConnectionStateFailed:
 			log.Println("Peer connection state has failed")
 		case webrtc.PeerConnectionStateClosed:
 			log.Println("Peer connection state is closed")
 		}
+	})
+	p.LocalConnection.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
+		log.Println("ICE connection state has changed: ", connectionState)
 	})
 	p.LocalConnection.OnICECandidate(func(candidate *webrtc.ICECandidate) {
 		if candidate == nil {
@@ -73,9 +88,10 @@ func (p *Peer) setupConnectionCallbacks() {
 
 		log.Println("New ICE candidate found")
 	})
+	log.Println("Peer connection callbacks set")
 }
 
-func(p *Peer) onInvalidDataChannel(d *webrtc.DataChannel) {
+func (p *Peer) onInvalidDataChannel(d *webrtc.DataChannel) {
 	log.Println("Ignoring data channel. Invalid label")
 	err := d.Close()
 	if err != nil {
@@ -110,7 +126,7 @@ func (p *Peer) setupDataChannelProtocol() {
 		// TODO: Add on close channel protocol logic
 	})
 	p.DataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-		log.Printf("Message received: %s\n", string(msg.Data))
+		p.logger("Message received: " + string(msg.Data))
 
 		// TODO: Add message handling logic
 	})
@@ -124,27 +140,26 @@ func (p *Peer) setupDataChannelProtocol() {
 			return
 		}
 
-		d.OnOpen(func () {
+		d.OnOpen(func() {
 			log.Printf("Accepted data channel. %s - %d\n", d.Label(), d.ID())
 			// TODO: Add authentication logic
 		})
 
 		d.OnMessage(func(msg webrtc.DataChannelMessage) {
-			log.Printf("Message received: %s\n", string(msg.Data))
+			p.logger("Message received: " + string(msg.Data))
 			// TODO: Add message handling logic
 		})
 	})
 }
 
-
 func (p *Peer) ReceiveOffer(offer []byte) error {
-	offer_sdp, err := decodeSDP(offer)
+	offerSDP, err := DecodeSDP(offer)
 	if err != nil {
 		log.Fatalln("Could not decode offer. err:", err)
 		return err
 	}
 
-	err = p.LocalConnection.SetRemoteDescription(offer_sdp)
+	err = p.LocalConnection.SetRemoteDescription(offerSDP)
 	if err != nil {
 		log.Fatalln("Could not set remote description. err:", err)
 		return err
@@ -153,31 +168,26 @@ func (p *Peer) ReceiveOffer(offer []byte) error {
 	return nil
 }
 
-
-func (p *Peer) SendAnswer() error {
+func (p *Peer) SendAnswer() ([]byte, error) {
 	answerSDP, err := p.LocalConnection.CreateAnswer(nil)
 	if err != nil {
 		log.Fatalln("Could not create answer. err:", err)
-		return err
+		return nil, err
 	}
 
-	answer, err := encodeSDP(answerSDP)
+	answer, err := EncodeSDP(answerSDP)
 	if err != nil {
 		log.Fatalln("Could not encode answer. err:", err)
-		return err
+		return nil, err
 	}
 
-	log.Println("Sending answer")
 	err = p.LocalConnection.SetLocalDescription(answerSDP)
 	if err != nil {
 		log.Fatalln("Could not set local description. err:", err)
-		return err
+		return nil, err
 	}
 
-	// TODO: Implement signalling logic
-	log.Println("Answer ->>> ", string(answer))
-
-	return nil
+	return answer, nil
 }
 
 func (p *Peer) CreateOffer() ([]byte, error) {
@@ -193,7 +203,7 @@ func (p *Peer) CreateOffer() ([]byte, error) {
 		return nil, err
 	}
 
-	offerSDP, err := encodeSDP(offer)
+	offerSDP, err := EncodeSDP(offer)
 	if err != nil {
 		log.Fatalln("Could not encode offer. err:", err)
 		return nil, err

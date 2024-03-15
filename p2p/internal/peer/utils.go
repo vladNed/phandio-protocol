@@ -9,7 +9,7 @@ import (
 
 
 
-func decodeSDP(raw_sdp []byte) (webrtc.SessionDescription, error) {
+func DecodeSDP(raw_sdp []byte) (webrtc.SessionDescription, error) {
 	sdp := webrtc.SessionDescription{}
 	err := json.Unmarshal(raw_sdp, &sdp)
 	if err != nil {
@@ -21,7 +21,7 @@ func decodeSDP(raw_sdp []byte) (webrtc.SessionDescription, error) {
 }
 
 
-func encodeSDP(sdp webrtc.SessionDescription) ([]byte, error) {
+func EncodeSDP(sdp webrtc.SessionDescription) ([]byte, error) {
 	raw_sdp, err := json.Marshal(sdp)
 	if err != nil {
 		log.Fatalln("Could not encode SDP. err:", err)
