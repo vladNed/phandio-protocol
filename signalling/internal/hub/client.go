@@ -41,6 +41,7 @@ func (c *Client) Register() {
 }
 
 func (c *Client) Unregister() {
+	// TODO: Cleanup the memcache of other offers
 	c.hub.unregister <- c
 	c.conn.Close()
 }
@@ -82,7 +83,11 @@ func (c *Client) handleMessage(message []byte) {
 			break
 		}
 		c.send <- responsePayload
-		c.hub.broadcast <- message
+		broadcastMessage := BroadcastMessage{
+			Channel: OffersChannel,
+			Message: string(message),
+		}
+		c.hub.broadcast <- &broadcastMessage
 		logger.Info("New offer created: ", messageRequest.OfferID)
 	case *AnswerOfferRequest:
 		if c.state != Registered {
