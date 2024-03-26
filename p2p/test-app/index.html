@@ -13,18 +13,12 @@
         <h1>WASM:</h1>
         <h4>Create Offer:</h4>
         <div>
-            <input type="text" id="offerSDPData" />
-            <button onclick="goCreateSDPOffer()">Create offer</button>
-        </div>
-        <div>
-            <input type="text" id="peerID" placeholder="Enter peer answer..."/>
-            <button onclick="goSetSDPAnswer()">Connect</button>
+            <button onclick="goCreateOffer()">Create offer</button>
         </div>
         <h4>Create answer:</h4>
         <div>
-            <button onclick="goCreateSDPAnswer()">Answer</button>
-            <input type="text" id="offerSDP" placeholder="Pase offer SDP..."/>
-            <input type="text" id="answerSDPData" />
+            <button onclick="goAnswerOffer()">Answer</button>
+            <input type="text" id="offerId" placeholder="Pase offer ID..."/>
         </div>
         <h1>Send:</h1>
         <div>
@@ -40,6 +34,7 @@
         WebAssembly.instantiateStreaming(fetch("p2p.wasm"), go.importObject).then((result) => {
             go.run(result.instance);
         });
+
     </script>
 </body>
 

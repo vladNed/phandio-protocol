@@ -49,7 +49,7 @@ func GetSettings() DefaultSettings {
 
 	redisSettings := NewRedisSettings()
 	defaultSettings := DefaultSettings{
-		Port:     "3000",
+		Port:     "8080",
 		Host:     "localhost",
 		LogLevel: "info",
 		Redis:    redisSettings,
