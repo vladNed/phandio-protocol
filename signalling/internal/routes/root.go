@@ -16,7 +16,7 @@ var (
 	logger     = logging.GetLogger(nil)
 	HttpRouter = router.NewHttpRouter("/api/v1", []router.Route{
 		{
-			Path:        "/ping",
+			Path:        "/ping/",
 			Method:      http.MethodGet,
 			HandlerFunc: ping,
 		},

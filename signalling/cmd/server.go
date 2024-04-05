@@ -9,19 +9,24 @@ import (
 	"github.com/mvx-mnr-atomic/signalling/internal/hub"
 )
 
-var config = settings.GetSettings()
-var logger = logging.GetLogger(nil)
+var(
+	config = settings.GetSettings()
+	logger = logging.GetLogger(nil)
+)
 
 func main() {
 	// Initialize hub
 	go hub.HubInstance.Run()
 
-
 	// Register routes
-	routes.HttpRouter.Register()
-	routes.WSRouter.Register()
+	mux := http.NewServeMux()
+	routes.HttpRouter.Register(mux)
+	routes.WSRouter.Register(mux)
 
 	// Start server
 	logger.Info("Running server on: ", config.GetAddress())
-	http.ListenAndServe(config.GetAddress(), nil)
+	err := http.ListenAndServeTLS(config.GetAddress(), config.CertFile, config.KeyFile, mux)
+	if err != nil {
+		logger.Error("Error starting server: ", err)
+	}
 }

@@ -21,11 +21,11 @@ func NewHttpRouter(prefix string, routes []Route) *HttpRouter {
 	}
 }
 
-func (r *HttpRouter) Register() {
+func (r *HttpRouter) Register(mux *http.ServeMux) {
 	for _, route := range r.routes {
 		routePath := r.prefix + route.Path
 		logger.Info(fmt.Sprintf("HTTP Route -> %s [%s]", routePath, route.Method))
-		http.HandleFunc(routePath, HttpMethodHandler(route.Method, route.HandlerFunc))
+		mux.HandleFunc(routePath, HttpMethodHandler(route.Method, route.HandlerFunc))
 	}
 }
 
@@ -41,10 +41,10 @@ func NewWsRouter(prefix string, routes []Route) *WsRouter {
 	}
 }
 
-func (r *WsRouter) Register() {
+func (r *WsRouter) Register(mux *http.ServeMux) {
 	for _, route := range r.routes {
 		routePath := r.prefix + route.Path
 		logger.Info(fmt.Sprintf("WS Route -> %s", routePath))
-		http.HandleFunc(routePath, route.HandlerFunc)
+		mux.HandleFunc(routePath, route.HandlerFunc)
 	}
 }

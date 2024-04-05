@@ -42,6 +42,10 @@ type DefaultSettings struct {
 
 	// Redis settings
 	Redis *RedisSettings
+
+	// Certs
+	CertFile string
+	KeyFile  string
 }
 
 func GetSettings() DefaultSettings {
@@ -50,15 +54,23 @@ func GetSettings() DefaultSettings {
 	redisSettings := NewRedisSettings()
 	defaultSettings := DefaultSettings{
 		Port:     "8080",
-		Host:     "localhost",
+		Host:     "0.0.0.0",
 		LogLevel: "info",
 		Redis:    redisSettings,
+		CertFile: "",
+		KeyFile:  "",
 	}
 	if port := os.Getenv("PORT"); port != "" {
 		defaultSettings.Port = port
 	}
 	if host := os.Getenv("HOST"); host != "" {
 		defaultSettings.Host = host
+	}
+	if certFile := os.Getenv("CERT_FILE"); certFile != "" {
+		defaultSettings.CertFile = certFile
+	}
+	if keyFile := os.Getenv("KEY_FILE"); keyFile != "" {
+		defaultSettings.KeyFile = keyFile
 	}
 
 	return defaultSettings

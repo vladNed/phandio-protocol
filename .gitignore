@@ -12,3 +12,6 @@ target/
 
 # Builds
 *.wasm
+
+# Resources
+*/resources/certs/*
